@@ -1,0 +1,39 @@
+---
+- hosts: apps
+  become: yes
+
+  vars:
+    nodejs_install_npm_user: root
+    npm_config_prefix: "/usr"
+    nodejs_npm_global_packages:
+      - forever
+#    firewall_allowed_tcp_ports:
+#      - "22"
+#      - "8080"
+
+  pre_tasks:
+    - name: Update apt cache if needed.
+      apt: update_cache=yes cache_valid_time=3600
+
+  roles:
+#    - geerlingguy.firewall
+    - geerlingguy.nodejs
+    - geerlingguy.git
+
+- hosts: lb
+  vars:
+    nginx_backend_servers:
+      - name: 10.0.15.21
+        address: 10.0.15.21:3000
+      - name: 10.0.15.22
+        address: 10.0.15.22:3000
+      - name: 10.0.15.23
+        address: 10.0.15.23:3000
+
+
+  pre_tasks:
+    - name: Update apt cache if needed.
+      apt: update_cache=yes cache_valid_time=3600
+
+  roles:
+    - geerlingguy.nginx

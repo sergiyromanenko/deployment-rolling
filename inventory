@@ -1,0 +1,15 @@
+[lb]
+10.0.15.11
+
+[lb:vars]
+ansible_user=ansible
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+
+[apps]
+10.0.15.21
+10.0.15.22
+10.0.15.23
+
+[apps:vars]
+ansible_user=ansible
+ansible_ssh_private_key_file=~/.ssh/id_rsa

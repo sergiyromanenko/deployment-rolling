@@ -1,0 +1,66 @@
+---
+- name: Rolling update deploy
+  hosts: apps
+  serial: 1
+  gather_facts: no
+  become: yes
+
+  vars_files:
+    - vars.yml
+
+
+  pre_tasks:
+    - debug: msg="Current server {{ inventory_hostname }}"
+    - name: Disable the backend server in Nginx proxy. Commenting a line server "{{ inventory_hostname }}"
+      replace:
+        path: /etc/nginx/sites-enabled/lb.conf
+        after: 'upstream myapp1 {'
+        before: '}'
+        regexp: '(^(?!#).*server\s{{ inventory_hostname }}.*)'
+        replace: '#\1'
+#        validate: 'nginx -t'
+      notify: reload nginx
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.lb }}"
+
+
+
+  tasks:
+    - debug: msg="Deployment would be done here."
+    - name: Wait for 5 seconds
+      wait_for:
+        timeout: 5
+      delegate_to: localhost
+
+  post_tasks:
+    - name: Wait for backend to come back up. Check port 3000
+      wait_for:
+        host: '{{ inventory_hostname }}'
+        port: 3000
+        state: started
+
+    - debug: msg="Current server {{ inventory_hostname }}"
+    - name: Enable the backend server in Nginx proxy. Uncommenting line #  server "{{ inventory_hostname }}"
+      replace:
+        path: /etc/nginx/sites-enabled/lb.conf
+        after: 'upstream myapp1 {'
+        before: '}'
+        regexp: '^#.(.*server\s{{ inventory_hostname }}.*)'
+        replace: '\1'
+#        validate: 'nginx -t'
+      notify: reload nginx
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.lb }}"
+
+
+
+
+  handlers:
+    - name: restart forever apps
+      command: "forever restartall"
+
+    - name: reload nginx
+      service: name=nginx state=reloaded
+      become: yes
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.lb }}"
