@@ -1,0 +1,4 @@
+---
+app_repository: https://bitbucket.org/ZaRDaK/devops-rolling-release.git
+app_version: "v1.0.0"
+app_directory: /opt/app-nodejs

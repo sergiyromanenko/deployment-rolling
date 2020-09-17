@@ -1,0 +1,104 @@
+---
+- hosts: apps
+  serial: 1
+  gather_facts: no
+  become: yes
+
+  vars_files:
+    - vars.yml
+
+
+  pre_tasks:
+    - name: Disable the backend server in Nginx proxy. Commenting a line server "{{ inventory_hostname }}"
+      replace:
+        path: /etc/nginx/sites-enabled/lb.conf
+        after: 'upstream myapp1 {'
+        before: '}'
+        regexp: '(^(?!#).*server\s{{ inventory_hostname }}.*)'
+        replace: '#\1'
+#        validate: 'nginx -t'
+      notify: reload nginx
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.lb }}"
+
+
+
+  tasks:
+    - name: Ensure Node.js API app is present.
+      git:
+        repo: "{{ app_repository }}"
+        version: "{{ app_version }}"
+        dest: "{{ app_directory }}"
+        accept_hostkey: true
+      register: app_updated
+      notify: restart forever apps
+
+    - name: Ansible copy file .env.example to .env
+      copy:
+        src: "{{ app_directory }}/.env.example"
+        dest: "{{ app_directory }}/.env"
+        remote_src: yes
+
+    - name: Set a key to track on which app server application was deployed
+      lineinfile:
+        path: "{{ app_directory }}/.env"
+        regexp: '^APP_KEY'
+        line: "APP_KEY={{ inventory_hostname }}"
+      notify: restart forever apps
+
+    - name: Stop all running instances of the app.
+      command: "forever stopall"
+      when: app_updated.changed
+
+    - name: Ensure Node.js API app dependencies are present.
+      npm: "path={{ app_directory }}"
+      when: app_updated.changed
+
+    - name: Run Node npm install
+      command: "npm install"
+      when: app_updated.changed
+
+    - name: Get list of all running Node.js apps.
+      command: forever list
+      register: forever_list
+      changed_when: false
+
+    - name: Ensure Node.js API app is started.
+      command: "forever start index.js"
+      args:
+        chdir: "{{ app_directory }}"
+      when: "forever_list.stdout.find('index.js') == -1"
+
+
+  post_tasks:
+    - name: Wait for backend to come back up. Check port 3000
+      wait_for:
+        host: '{{ inventory_hostname }}'
+        port: 3000
+        state: started
+
+
+    - name: Enable the backend server in Nginx proxy. Uncommenting line #  server "{{ inventory_hostname }}"
+      replace:
+        path: /etc/nginx/sites-enabled/lb.conf
+        after: 'upstream myapp1 {'
+        before: '}'
+        regexp: '^#.(.*server\s{{ inventory_hostname }}.*)'
+        replace: '\1'
+#        validate: 'nginx -t'
+      notify: reload nginx
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.lb }}"
+
+
+
+
+  handlers:
+    - name: restart forever apps
+      command: "forever restartall"
+
+    - name: reload nginx
+      service: name=nginx state=reloaded
+      become: yes
+      delegate_to: "{{ item }}"
+      with_items: "{{ groups.lb }}"
