@@ -42,9 +42,8 @@ This project builds a [Node.js](https://nodejs.org/)-based API app inside a VM. 
 
   1. Download and install [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
   2. Download and install [Vagrant](http://www.vagrantup.com/downloads.html).
-  3. Run `ansible-galaxy install -r requirements.yml` in this directory to get the required Ansible roles.
-  4. Run `vagrant up` to build the VM and deploy the version of the app specified in `playbooks/vars.yml`.
-
+  3. Run `vagrant up` to build the VM and deploy the version of the app specified in `playbooks/vars.yml`.
+  
 
 $ vagrant status
 Current machine states:
@@ -58,6 +57,7 @@ app3                      running (virtualbox)
 
 Once the VM is built, you can test the API by running the following command from your ansible server (command)
 
+Ansible server is "command" machine.
 
 root@command:/home/vagrant# for i in {1..100}; do curl -s  http://10.0.15.11/ -H "Accept: application/json"; echo "" ; done
 {"app":"10.0.15.22","version":"1.0.0","servedIn":254.1687568392561}
