@@ -3,13 +3,13 @@
 Your task is creating an ansible playbook that manages zero-downtime deployment of a sample Node.js application.
 
 ## Setting up
-Provided `Vagrantfile` defines 5 boxes by default:
+Provided `Vagrantfile` at rolling-release.tgz defines 5 boxes by default:
 * A `command` box from which you will run ansible (hostname: command, ip: 10.0.15.10)
 * A `lb` box that will serve as load balancer (hostname: lb, ip: `10.0.15.11`)
 * 3 `app` boxes (`app1`, `app2`, `app3`) that will serve the application itself (hostname: appN, ip: 10.0.15.2N)
 
 Your initial task is:
-* Set up a `nginx` or `haproxy` load balancer
+* Set up a `nginx` load balancer
 * Deploy [sample Node.js application](https://bitbucket.org/ZaRDaK/devops-rolling-release) to app servers
 * Wire everything up
 
@@ -22,6 +22,14 @@ Your initial task is:
 6. Add app server to load balancer
 
 If any step fails, abort the whole play
+
+## Test rolling-release application
+
+Dependencies: * Node.js binary >= 7.0.0
+
+Installation: 1. Clone this repository, each release version is tagged with vX.X.X, i.e. v1.0.0 2. Fetch dependencies with npm install 3. Ensure all required environmental variables defined in .env.example are present 4. Run node index.js or npm start
+
+Available versions: 1. v1.0.0 - Initial release 2. v1.1.0 - Simulate a failed release, process will exit after one second 3. v2.0.0 - Simulate a fixed release, everything back to normal
 
 
 _______________________________
